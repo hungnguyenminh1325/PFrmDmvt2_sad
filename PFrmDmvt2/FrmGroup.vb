@@ -340,7 +340,7 @@ Public Class FrmGroup
         End If
         pathName = String.Format("{0}{1}.jpg", Me.oVar("groupDir"), pathName)
         Dim camera As New FrmCap(pathName)
-        camera.ShowDialog()
+        camera.ShowDialog(Me)
         If File.Exists(pathName) Then
             txtImagePath.Text = pathName
         End If
@@ -366,7 +366,7 @@ Public Class FrmGroup
         End If
         pathName = String.Format("{0}{1}.jpg", Me.oVar("groupDir"), pathName)
         Dim camera As New FrmCap(pathName)
-        camera.ShowDialog()
+        camera.ShowDialog(Me)
         If File.Exists(pathName) Then
             txtImagePath.Text = pathName
         End If

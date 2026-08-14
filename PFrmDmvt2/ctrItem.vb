@@ -1788,7 +1788,7 @@ tryagain:
         Dim pathName As String = txtVtID.Text
         pathName = String.Format("{0}{1}.jpg", Me.itemDir, pathName)
         Dim camera As New FrmCap(pathName)
-        camera.ShowDialog()
+        camera.ShowDialog(Me.FindForm())
         If File.Exists(pathName) Then
             txtImagePath.Text = pathName
         End If
