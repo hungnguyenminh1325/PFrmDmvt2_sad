@@ -61,3 +61,15 @@ Tại các file thực hiện chụp ảnh của Vật tư và Nhóm Vật tư:
 4. Visual Studio sẽ tự động build và xuất các tệp sau vào thư mục `build/app/`:
    - `PFrmDmvt2.dll` (File logic chương trình mới nhất).
    - Bản sao của 3 DLL AForge cần thiết.
+
+---
+
+## 4. Nhật ký sửa lỗi (Bug Fixes)
+
+* **Lỗi MDI Child bị thu nhỏ lại (unmaximize) sau khi đóng camera/duyệt ảnh:**
+  - *Nguyên nhân:* Mở modal dialog không gắn `MdiParent` và có `ShowInTaskbar = True` dẫn đến mất tiêu điểm và hệ điều hành tự động khôi phục kích thước cũ của MDI Child Form.
+  - *Khắc phục:* Gán rõ `owner` là `MdiParent` lớn nhất khi gọi `ShowDialog` và đặt `ShowInTaskbar = False` cho Form `FrmCap`.
+
+* **Lỗi crash ứng dụng khi chọn ảnh `Unable to cast ... to type System.Windows.Window`:**
+  - *Nguyên nhân:* Do import thư viện `Microsoft.Win32` dẫn đến compiler hiểu nhầm `OpenFileDialog` thành phiên bản của WPF (cần WPF Window làm cha), gây lỗi khi chạy trên Windows Forms.
+  - *Khắc phục:* Đổi khai báo rõ ràng thành `System.Windows.Forms.OpenFileDialog`.

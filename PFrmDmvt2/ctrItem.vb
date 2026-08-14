@@ -1800,7 +1800,7 @@ tryagain:
     End Sub
 
     Private Sub btnBrown_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnBrown.Click
-        Dim f As New OpenFileDialog
+        Dim f As New System.Windows.Forms.OpenFileDialog
         Dim fileToRead As String = ""
         'f.InitialDirectory = oVars.Item("reportDir").Replace("report\", "export\import\")
         Dim parentForm As Form = Me.FindForm()

@@ -322,7 +322,7 @@ Public Class FrmGroup
 
     Private Sub Button1_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
         Try
-            Dim f As New OpenFileDialog
+            Dim f As New System.Windows.Forms.OpenFileDialog
             f.Filter = "All files (*.*)|*.*|Standard Image files (*.png)|*.png"
             f.ShowDialog()
             Me.txtImagePath.Text = f.FileName.Trim
@@ -356,7 +356,7 @@ Public Class FrmGroup
             If Me.MdiParent IsNot Nothing Then
                 owner = Me.MdiParent
             End If
-            Dim f As New OpenFileDialog
+            Dim f As New System.Windows.Forms.OpenFileDialog
             f.Filter = "All files (*.*)|*.*|Standard Image files (*.png)|*.png"
             f.ShowDialog(owner)
             Me.txtImagePath.Text = f.FileName.Trim
