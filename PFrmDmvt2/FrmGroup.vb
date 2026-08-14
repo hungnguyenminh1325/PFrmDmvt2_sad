@@ -339,8 +339,12 @@ Public Class FrmGroup
             pathName = pathName = Strings.Right(DateTime.Now.Year.ToString, 2) + DateTime.Now.Month + DateTime.Now.Day + DateTime.Now.Hour + DateTime.Now.Minute
         End If
         pathName = String.Format("{0}{1}.jpg", Me.oVar("groupDir"), pathName)
+        Dim owner As IWin32Window = Me
+        If Me.MdiParent IsNot Nothing Then
+            owner = Me.MdiParent
+        End If
         Dim camera As New FrmCap(pathName)
-        camera.ShowDialog(Me)
+        camera.ShowDialog(owner)
         If File.Exists(pathName) Then
             txtImagePath.Text = pathName
         End If
@@ -348,9 +352,13 @@ Public Class FrmGroup
 
     Private Sub btnBrown_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnBrown.Click
         Try
+            Dim owner As IWin32Window = Me
+            If Me.MdiParent IsNot Nothing Then
+                owner = Me.MdiParent
+            End If
             Dim f As New OpenFileDialog
             f.Filter = "All files (*.*)|*.*|Standard Image files (*.png)|*.png"
-            f.ShowDialog()
+            f.ShowDialog(owner)
             Me.txtImagePath.Text = f.FileName.Trim
         Catch ex As Exception
         End Try
@@ -365,8 +373,12 @@ Public Class FrmGroup
             pathName = pathName = Strings.Right(DateTime.Now.Year.ToString, 2) + DateTime.Now.Month + DateTime.Now.Day + DateTime.Now.Hour + DateTime.Now.Minute
         End If
         pathName = String.Format("{0}{1}.jpg", Me.oVar("groupDir"), pathName)
+        Dim owner As IWin32Window = Me
+        If Me.MdiParent IsNot Nothing Then
+            owner = Me.MdiParent
+        End If
         Dim camera As New FrmCap(pathName)
-        camera.ShowDialog(Me)
+        camera.ShowDialog(owner)
         If File.Exists(pathName) Then
             txtImagePath.Text = pathName
         End If

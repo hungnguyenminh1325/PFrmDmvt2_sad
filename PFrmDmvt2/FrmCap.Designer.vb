@@ -137,6 +137,7 @@ Partial Class FrmCap
         Me.Controls.Add(Me.pnlFooter)
         Me.Controls.Add(Me.pnlHeader)
         Me.Name = "FrmCap"
+        Me.ShowInTaskbar = False
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
         Me.Text = "Chụp ảnh sản phẩm"
         Me.pnlHeader.ResumeLayout(False)

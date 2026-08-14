@@ -1787,8 +1787,13 @@ tryagain:
         End If
         Dim pathName As String = txtVtID.Text
         pathName = String.Format("{0}{1}.jpg", Me.itemDir, pathName)
+        Dim parentForm As Form = Me.FindForm()
+        Dim owner As IWin32Window = parentForm
+        If parentForm IsNot Nothing AndAlso parentForm.MdiParent IsNot Nothing Then
+            owner = parentForm.MdiParent
+        End If
         Dim camera As New FrmCap(pathName)
-        camera.ShowDialog(Me.FindForm())
+        camera.ShowDialog(owner)
         If File.Exists(pathName) Then
             txtImagePath.Text = pathName
         End If
@@ -1798,8 +1803,12 @@ tryagain:
         Dim f As New OpenFileDialog
         Dim fileToRead As String = ""
         'f.InitialDirectory = oVars.Item("reportDir").Replace("report\", "export\import\")
-        f.Filter = "Standard Image files (*.jpg)|*.jpg|Standard Image files (*.png)|*.png" '"All files (*.*)|*.*|Standard Excel files (*.xls)|*.xls"
-        If f.ShowDialog() = DialogResult.OK Then
+        Dim parentForm As Form = Me.FindForm()
+        Dim owner As IWin32Window = parentForm
+        If parentForm IsNot Nothing AndAlso parentForm.MdiParent IsNot Nothing Then
+            owner = parentForm.MdiParent
+        End If
+        If f.ShowDialog(owner) = DialogResult.OK Then
             'phần này đang bị lỗi, k hiểu sao nó k vào phần nút ok này
             'msg.Alert(f.FileName)
             fileToRead = f.FileName
