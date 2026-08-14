@@ -1,0 +1,46 @@
+## Visual Studio GitIgnore
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+# NOTE: If you want to keep the 'build' folder because it contains databases/assets, you can comment the line above or add:
+!build/app/add/
+!build/database/
+
+# Ignore local bin/obj directories inside the project
+PFrmDmvt2/bin/
+PFrmDmvt2/obj/
+PFrmDmvt2/My Project/vssver2.scc
+
+# MSBuild temporary files
+*.suo
+*.user
+*.aps
+*.ldf
+*.tmp
+*.cache
+*.pdb
+*.xml
+
+# Visual Studio files
+.vs/
+*.opensdf
+*.sdf
+*.sublime-project
+*.sublime-workspace
+
+# NuGet packages
+packages/*
+# Keep AForge packages
+!packages/AForge/
+!packages/QRCoder.1.6.0/
+
+# Windows temp files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
