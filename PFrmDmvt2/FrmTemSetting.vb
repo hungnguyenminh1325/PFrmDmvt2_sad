@@ -20,6 +20,11 @@ Public Class FrmTemSetting
     Dim oLabelID As String
     Dim tab2 As TabPage
     Dim oStatus As String = "Load"
+
+    Public Sub New()
+        InitializeComponent()
+    End Sub
+
     Public Sub New(ByVal sysCnn As SQLiteConnection, ByVal appCnn As SQLiteConnection, ByVal pOption As Collection, ByVal pVar As Collection, ByVal pAction As String, Optional ByVal pLabel As String = "")
 
         ' This call is required by the Windows Form Designer.
@@ -35,6 +40,7 @@ Public Class FrmTemSetting
 
     End Sub
     Private Sub FrmTemSetting_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+        If Me.DesignMode OrElse System.ComponentModel.LicenseManager.UsageMode = System.ComponentModel.LicenseUsageMode.Designtime Then Return
         Me.RefreshControl(Me.pnLeft.Controls.GetEnumerator)
         Me.LoadTem()
         Me.SetValue()

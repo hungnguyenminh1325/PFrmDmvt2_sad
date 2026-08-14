@@ -824,16 +824,14 @@ Public Class ctrItem
     Private Sub printItem()
         If Me.cAction.ToLower = "start" Then
             If KieuInBartender = "1" Then
-                'xuất excel và in bartender
-                'Dim FilePathSave As String
-                'FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.xls"
-                'ExportGridToExcel2(i_view, "Xuất dmvt để in tem", FilePathSave)
-                'In bằng bartender
                 If i_view.Rows.Count = 0 Then
                     msg.Alert("Hãy chọn những mặt hàng cần in tem")
                     Return
                 End If
-                inBartender(i_view)
+                'xuất excel và in bartender
+                Dim FilePathSave As String
+                FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.csv"
+                ExportGridToExcel2(i_view, "Xuất dmvt để in tem", FilePathSave)
             Else
                 'in tem bằng phần mềm cũ vẫn dùng
                 If i_view.Rows.Count = 0 Then
@@ -1335,10 +1333,9 @@ Public Class ctrItem
             If InLuonSL = "1" Then
                 If KieuInBartender = "1" Then
                     'lưu xong mã thì xuất excel và in ra bartender luôn
-                    'Dim FilePathSave As String
-                    'FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.xls"
-                    'ExportGridToExcel2(i_view2, "Xuất dmvt để in tem", FilePathSave)
-                    inBartenderSLnhieu(i_view2)
+                    Dim FilePathSave As String
+                    FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.csv"
+                    ExportGridToExcel2(i_view2, "Xuất dmvt để in tem", FilePathSave)
                 Else
                     'lưu xong mã thì in tem
                     Intem(i_view2)
@@ -2344,9 +2341,7 @@ tryagain:
 
             'lưu xong mã thì xuất excel
             Dim FilePathSave As String
-
-            FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.xls"
-
+            FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.csv"
             ExportGridToExcel2(i_view2, "Xuất dmvt để in tem", FilePathSave)
             'lưu xong mã thì in tem
             'Intem(i_view2)
@@ -2361,126 +2356,133 @@ tryagain:
         End If
     End Sub
     Private Sub ExportGridToExcel2(ByVal dv As DataTable, ByVal cTitle As String, ByVal FilePath2Save As String)
-        'Vừa xuất ra excel rồi chạy luôn in tem trên bartender .btw
-        Dim appExcel As Excel.Application = New Excel.Application
-        If appExcel Is Nothing Then
-            msg.Alert("ERROR: EXCEL couldn't be started!", 1)
-            Environment.ExitCode = 0
-            Exit Sub
-        End If
-
-        For Each dr As DataRow In dv.Rows
-            dr("gc_td1") = getKLgam(dr("Tong_tlg"))
-            dr("gc_td2") = getKLgam(dr("Tlg_au"))
-            dr("gc_td3") = getKLgam(dr("Tlg_da"))
-            dr("sl_td1") = getKLgamSo(dr("Tong_tlg"))
-            dr("sl_td2") = getKLgamSo(dr("Tlg_au"))
-            dr("sl_td3") = getKLgamSo(dr("Tlg_da"))
-        Next
-
-        appExcel.Visible = False
-        Dim workbook As Excel.Workbook = appExcel.Workbooks.Add(Excel.XlWBATemplate.xlWBATWorksheet)
-        Dim worksheet As Excel.Worksheet = workbook.Worksheets.Item(1)
-        If worksheet Is Nothing Then
-            msg.Alert("ERROR: worksheet == null", 1)
-        End If
-
-        'Setting
-        worksheet.Cells.Font.Name = "Times New Roman"
-        worksheet.Cells.Font.Size = 11
-
-        ''Title
-        'worksheet.Range("A2:E2").Select()
-        'worksheet.Range("A2:E2").MergeCells = True
-        'worksheet.Range("A2:E2").Merge()
-        'Dim range0 As Object
-        'range0 = worksheet.Cells(2, 1) 'worksheet.Range("A2")
-        'range0.Value2 = Strings.UCase(cTitle).Trim
-        'range0.Font.Size = 16
-        'range0.Font.Bold = True
-
-        'Header
-        Dim rowIndex As Int16 = 0 'để 5 mà nó lại in từ dòng 7 nên giảm xuống 3 là ok
-        Dim colIndex As Int16 = 0
-        For Each dc As DataColumn In dv.Columns
-            colIndex = colIndex + 1
-            Dim range1 As Object
-            range1 = worksheet.Cells(1, colIndex) 'worksheet.Range(Convert.ToChar(Convert.ToInt16(cFirstCol) + num1 - 1) & Convert.ToString(iHeaderRow), Missing.Value)
-            range1.Value2 = dc.ColumnName
-            range1.Font.Bold = True
-            range1.Font.Color = RGB(0, 0, 0)
-            range1.Interior.Color = RGB(70, 255, 163)
-        Next
-        For Each dr As DataRow In dv.Rows
-            rowIndex = rowIndex + 1
-            colIndex = 0
-            For Each dc As DataColumn In dv.Columns
-                colIndex = colIndex + 1
-                Dim range1 As Object
-                range1 = worksheet.Cells(rowIndex + 1, colIndex)
-                If dc.ColumnName.ToLower = "gia_ban11" Then
-                    Dim tien As Decimal
-                    tien = Convert.ToDecimal(dr(dc.ColumnName))
-                    range1.Value2 = LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien")))
-                ElseIf dc.ColumnName.ToLower = "tien_cong" Then
-                    Dim tien As Decimal
-                    tien = Convert.ToDecimal(dr(dc.ColumnName))
-                    range1.Value2 = LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien")))
-                ElseIf dc.ColumnName.ToLower = "tien_da" Then
-                    Dim tien As Decimal
-                    tien = Convert.ToDecimal(dr(dc.ColumnName))
-                    range1.Value2 = LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien")))
-                ElseIf dc.ColumnName.ToLower = "tong_tlg" Then
-                    Dim so As Decimal = Convert.ToDecimal(dr(dc.ColumnName).ToString.Trim)
-                    range1.NumberFormat = Me.oOptions("m_ip_tlg")
-                    range1.Value2 = so 'Strings.Format(so, Me.oOptions("m_ip_tlg"))
-                ElseIf dc.ColumnName.ToLower = "tlg_au" Then
-                    Dim so As Decimal = Convert.ToDecimal(dr(dc.ColumnName).ToString.Trim)
-                    range1.NumberFormat = Me.oOptions("m_ip_tlg")
-                    range1.Value2 = so 'Strings.Format(so, Me.oOptions("m_ip_tlg"))
-                ElseIf dc.ColumnName.ToLower = "tlg_da" Then
-                    Dim so As Decimal = Convert.ToDecimal(dr(dc.ColumnName).ToString.Trim)
-                    range1.NumberFormat = Me.oOptions("m_ip_tlg")
-                    range1.Value2 = so 'Strings.Format(so, Me.oOptions("m_ip_tlg"))
-                ElseIf dc.ColumnName.ToLower = "sl_td1" Then
-                    range1.NumberFormat = Me.oOptions("m_ip_tlg")
-                    range1.Value2 = dr(dc.ColumnName)
-                ElseIf dc.ColumnName.ToLower = "sl_td2" Then
-                    range1.NumberFormat = Me.oOptions("m_ip_tlg")
-                    range1.Value2 = dr(dc.ColumnName)
-                ElseIf dc.ColumnName.ToLower = "sl_td3" Then
-                    range1.NumberFormat = Me.oOptions("m_ip_tlg")
-                    range1.Value2 = dr(dc.ColumnName)
-                ElseIf dc.DataType Is System.Type.GetType("System.DateTime") Then
-                    If dc.ColumnName.ToLower = "datetime0" Or dc.ColumnName.ToLower = "datetime2" Then
-                        range1.NumberFormat = "dd/MM/yyyy hh:mm:ss"
-                    Else
-                        range1.NumberFormat = "dd/MM/yyyy"
-                    End If
-                    range1.Value2 = dr(dc.ColumnName)
-                Else
-                    range1.NumberFormat = "@"
-                    range1.Value2 = dr(dc.ColumnName)
-                End If
-            Next
-        Next
-
-        worksheet.Columns.AutoFit()
         Try
-            If System.IO.File.Exists(FilePath2Save) Then
-                System.IO.File.Delete(FilePath2Save)
+            Dim dir As String = System.IO.Path.GetDirectoryName(FilePath2Save)
+            If Not System.IO.Directory.Exists(dir) Then
+                System.IO.Directory.CreateDirectory(dir)
             End If
-            workbook.SaveAs(FilePath2Save)
-            workbook.Close()
-            'appExcel = Nothing
-            appExcel.Quit()
-            'msg.Alert("Xuất file excel thành công")
-            'xuất excel xong in
+        Catch
+        End Try
+        
+        ' 1. Tạo bảng dữ liệu xuất khẩu chuẩn chỉ chứa các cột mà BarTender cần
+        Dim dtExport As New DataTable("TEM")
+        dtExport.Columns.Add("Code", GetType(String))
+        dtExport.Columns.Add("VtID", GetType(String))
+        dtExport.Columns.Add("VtName", GetType(String))
+        dtExport.Columns.Add("Ma_td2", GetType(String))
+        dtExport.Columns.Add("gc_td1", GetType(String))
+        dtExport.Columns.Add("gc_td2", GetType(String))
+        dtExport.Columns.Add("gc_td3", GetType(String))
+        dtExport.Columns.Add("sl_td1", GetType(String))
+        dtExport.Columns.Add("sl_td2", GetType(String))
+        dtExport.Columns.Add("sl_td3", GetType(String))
+        dtExport.Columns.Add("tlg_au", GetType(Double))
+        dtExport.Columns.Add("tlg_da", GetType(Double))
+        dtExport.Columns.Add("Tong_tlg", GetType(Double))
+        dtExport.Columns.Add("Gia_ban11", GetType(String))
+        dtExport.Columns.Add("Tien_da", GetType(String))
+        dtExport.Columns.Add("Tien_cong", GetType(String))
+        dtExport.Columns.Add("S1", GetType(String))
+        dtExport.Columns.Add("S2", GetType(String))
+        dtExport.Columns.Add("S3", GetType(String))
+        dtExport.Columns.Add("S10", GetType(String))
+        dtExport.Columns.Add("S11", GetType(String))
+        dtExport.Columns.Add("dienGiaiNh", GetType(String))
+
+        ' 2. Điền dữ liệu từ dv vào dtExport với định dạng tương ứng
+        For Each dr As DataRow In dv.Rows
+            Dim newRow As DataRow = dtExport.NewRow()
+            
+            newRow("Code") = If(dv.Columns.Contains("Code"), dr("Code").ToString().Trim(), "")
+            newRow("VtID") = If(dv.Columns.Contains("VtID"), dr("VtID").ToString().Trim(), "")
+            newRow("VtName") = If(dv.Columns.Contains("VtName"), dr("VtName").ToString().Trim(), "")
+            newRow("Ma_td2") = If(dv.Columns.Contains("Ma_td2"), dr("Ma_td2").ToString().Trim(), "")
+            
+            Dim tongTlgVal As Object = If(dv.Columns.Contains("Tong_tlg"), dr("Tong_tlg"), 0)
+            Dim tlgAuVal As Object = If(dv.Columns.Contains("Tlg_au"), dr("Tlg_au"), 0)
+            Dim tlgDaVal As Object = If(dv.Columns.Contains("Tlg_da"), dr("Tlg_da"), 0)
+
+            newRow("gc_td1") = getKLgam(tongTlgVal)
+            newRow("gc_td2") = getKLgam(tlgAuVal)
+            newRow("gc_td3") = getKLgam(tlgDaVal)
+            
+            newRow("sl_td1") = getKLgamSo(tongTlgVal)
+            newRow("sl_td2") = getKLgamSo(tlgAuVal)
+            newRow("sl_td3") = getKLgamSo(tlgDaVal)
+            
+            newRow("tlg_au") = If(Information.IsDBNull(tlgAuVal) OrElse tlgAuVal.ToString() = "", 0.0, Convert.ToDouble(tlgAuVal))
+            newRow("tlg_da") = If(Information.IsDBNull(tlgDaVal) OrElse tlgDaVal.ToString() = "", 0.0, Convert.ToDouble(tlgDaVal))
+            newRow("Tong_tlg") = If(Information.IsDBNull(tongTlgVal) OrElse tongTlgVal.ToString() = "", 0.0, Convert.ToDouble(tongTlgVal))
+            
+            Dim m_ip_tien As String = Me.oOptions("m_ip_tien")
+            
+            Dim giaBanVal As Object = If(dv.Columns.Contains("Gia_ban11"), dr("Gia_ban11"), 0)
+            Dim tienDaVal As Object = If(dv.Columns.Contains("Tien_da"), dr("Tien_da"), 0)
+            Dim tienCongVal As Object = If(dv.Columns.Contains("Tien_cong"), dr("Tien_cong"), 0)
+            
+            newRow("Gia_ban11") = LTrim(Strings.Format(If(Information.IsDBNull(giaBanVal) OrElse giaBanVal.ToString() = "", 0D, Convert.ToDecimal(giaBanVal)), m_ip_tien))
+            newRow("Tien_da") = LTrim(Strings.Format(If(Information.IsDBNull(tienDaVal) OrElse tienDaVal.ToString() = "", 0D, Convert.ToDecimal(tienDaVal)), m_ip_tien))
+            newRow("Tien_cong") = LTrim(Strings.Format(If(Information.IsDBNull(tienCongVal) OrElse tienCongVal.ToString() = "", 0D, Convert.ToDecimal(tienCongVal)), m_ip_tien))
+            
+            newRow("S1") = If(dv.Columns.Contains("S1"), dr("S1").ToString().Trim(), "")
+            newRow("S2") = If(dv.Columns.Contains("S2"), dr("S2").ToString().Trim(), "")
+            newRow("S3") = If(dv.Columns.Contains("S3"), dr("S3").ToString().Trim(), "")
+            newRow("S10") = If(dv.Columns.Contains("S10"), dr("S10").ToString().Trim(), "")
+            newRow("S11") = If(dv.Columns.Contains("S11"), dr("S11").ToString().Trim(), "")
+            
+            Dim NhomDg As String = ""
+            If dv.Columns.Contains("dienGiaiNh") AndAlso Not Information.IsDBNull(dr("dienGiaiNh")) AndAlso dr("dienGiaiNh").ToString().Trim().Length > 0 Then
+                NhomDg = dr("dienGiaiNh").ToString().Trim()
+            ElseIf dv.Columns.Contains("FK_Nhvt2ID") AndAlso Not Information.IsDBNull(dr("FK_Nhvt2ID")) Then
+                NhomDg = sql.GetValue(appConn, "dmnhvt2", "DienGiai", "Nhvt2ID ='" & dr("FK_Nhvt2ID").ToString().Trim() & "'")
+            End If
+            newRow("dienGiaiNh") = NhomDg
+            
+            dtExport.Rows.Add(newRow)
+        Next
+
+        ' 3. Viết file CSV trực tiếp (không dùng Excel COM nữa, nhanh hơn và không lo bị khóa tiến trình)
+        Try
+            ' Cấu hình mã hóa UTF-8 với BOM để tránh lỗi tiếng Việt
+            Using writer As New System.IO.StreamWriter(FilePath2Save, False, System.Text.Encoding.UTF8)
+                ' Viết dòng tiêu đề
+                Dim headerLine As String = ""
+                For i As Integer = 0 To dtExport.Columns.Count - 1
+                    headerLine &= EscapeCSV(dtExport.Columns(i).ColumnName)
+                    If i < dtExport.Columns.Count - 1 Then
+                        headerLine &= ","
+                    End If
+                Next
+                writer.WriteLine(headerLine)
+
+                ' Viết các dòng dữ liệu
+                For Each dr As DataRow In dtExport.Rows
+                    Dim dataLine As String = ""
+                    For i As Integer = 0 To dtExport.Columns.Count - 1
+                        dataLine &= EscapeCSV(dr(i).ToString())
+                        If i < dtExport.Columns.Count - 1 Then
+                            dataLine &= ","
+                        End If
+                    Next
+                    writer.WriteLine(dataLine)
+                Next
+            End Using
+
+            ' Gọi in BarTender
             inBartenderExcel()
-        Catch Outer As COMException
-            Console.WriteLine("User closed Excel manually, so we don't have to do that")
+        Catch ex As Exception
+            msg.Alert("Lỗi khi ghi file CSV hoặc gọi in BarTender: " & ex.Message)
         End Try
     End Sub
+
+    Private Function EscapeCSV(ByVal str As String) As String
+        If str Is Nothing Then Return ""
+        str = str.Replace("""", """""")
+        If str.Contains(",") OrElse str.Contains("""") OrElse str.Contains(vbCr) OrElse str.Contains(vbLf) Then
+            str = """" & str & """"
+        End If
+        Return str
+    End Function
 
     Private Sub LoadNCC()
         Me.cbChonNCC.Items.Clear()
@@ -2678,14 +2680,11 @@ tryagain:
                 'btFormat = btApp.Formats.Open("D:\00ngoai\2019\pm kho_thao\3cm 1cm.btw")
                 'Code, vtid, vtname, gia_ban11, ma_td2, s1, tong_tlg, tlg_au, tlg_da, tien_da, tien_cong
                 btFormat = btApp.Formats.Open(filepath)
-                'btFormat.SetNamedSubStringValue("code", txtCode.Text)
 
                 'Số bản copy của 1 con tem
                 btFormat.IdenticalCopiesOfLabel = 1
-                'số lượng tem cần in
-                btFormat.NumberSerializedLabels = 1
                 'hàm in
-                'btFormat.UseDatabase = True
+                btFormat.UseDatabase = True
                 'btFormat.UseInputDataFile = True
                 btFormat.Print("Job1", True, -1, btMsgs)
             Catch ex As Exception

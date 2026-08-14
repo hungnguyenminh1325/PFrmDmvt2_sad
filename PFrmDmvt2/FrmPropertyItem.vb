@@ -1,7 +1,13 @@
-﻿Imports hg3.hg3
-Imports Microsoft.VisualBasic.CompilerServices
+﻿Imports Microsoft.VisualBasic.CompilerServices
+Imports hg3.hg3
+
 Public Class ctrProperty
     Dim oOptions As Collection
+
+    Public Sub New()
+        InitializeComponent()
+    End Sub
+
     Public Sub New(ByVal pOption As Collection)
 
         ' This call is required by the Windows Form Designer.
@@ -10,6 +16,7 @@ Public Class ctrProperty
         ' Add any initialization after the InitializeComponent() call.
     End Sub
     Private Sub ctrProperty_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+        If Me.DesignMode OrElse System.ComponentModel.LicenseManager.UsageMode = System.ComponentModel.LicenseUsageMode.Designtime Then Return
         RefreshControl(Me.Controls.GetEnumerator)
     End Sub
     Private Sub RefreshControl(ByVal IE As IEnumerator)

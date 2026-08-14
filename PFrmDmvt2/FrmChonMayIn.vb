@@ -1,5 +1,6 @@
 ﻿Option Strict Off
 Option Explicit On
+
 Imports System.Management
 Imports System.Data.SQLite
 Imports hg3.hg3
@@ -17,7 +18,11 @@ Public Class FrmChonMayIn
     Dim typeChoice As String
     Dim pFrmMain As UserControl
     Dim NamePrinter As String
-    
+
+    Public Sub New()
+        InitializeComponent()
+    End Sub
+
     Public Sub New(ByVal FrmMain As UserControl, ByVal oOptions As Collection, ByVal sConn As SQLiteConnection, ByVal NamePrint As String, ByVal type As String)
         ' This call is required by the Windows Form Designer.
         InitializeComponent()
@@ -30,6 +35,7 @@ Public Class FrmChonMayIn
     End Sub
 
     Private Sub FrmChonMayIn_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+        If Me.DesignMode OrElse System.ComponentModel.LicenseManager.UsageMode = System.ComponentModel.LicenseUsageMode.Designtime Then Return
         'Ten may in truoc
         'Dim pr = New Printing.PrinterSettings
         'lbmayintruoc.Text = pr.PrinterName

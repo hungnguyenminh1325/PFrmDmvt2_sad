@@ -1,12 +1,13 @@
-﻿Imports Microsoft.VisualBasic
+﻿Imports System.Data.SqlClient
 Imports Microsoft.VisualBasic.CompilerServices
+Imports Microsoft.VisualBasic
 Imports hg3.hg3
 Imports System.Drawing
 Imports System.Data.SQLite
-Imports System.Data.SqlClient
 Imports System.Runtime.CompilerServices
 Imports System.IO
 Imports PPhotography.PPhotography
+
 Public Class FrmBarcode
     Dim cActionItem As String = ""
     Dim oOptions As Collection
@@ -22,6 +23,11 @@ Public Class FrmBarcode
     Dim tab2 As TabPage
     Dim oStatus As String = "Load"
     Dim ctrItem1 As ctrItem
+
+    Public Sub New()
+        InitializeComponent()
+    End Sub
+
     Public Sub New(ByVal sysCnn As SQLiteConnection, ByVal appCnn As SqlConnection, ByVal pOption As Collection, ByVal pVar As Collection, ByVal pAction As String, ByVal pItem As ctrItem, Optional ByVal pLabel As String = "")
         ' This call is required by the Windows Form Designer.
         InitializeComponent()
@@ -34,6 +40,7 @@ Public Class FrmBarcode
         Me.ctrItem1 = pItem
     End Sub
     Private Sub FrmBarcode_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
+        If Me.DesignMode OrElse System.ComponentModel.LicenseManager.UsageMode = System.ComponentModel.LicenseUsageMode.Designtime Then Return
         RefreshControl(Panel1.Controls.GetEnumerator)
         LoadTem()
         SetValue()
