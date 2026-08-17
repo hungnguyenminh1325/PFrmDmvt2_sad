@@ -823,38 +823,104 @@ Public Class ctrItem
     End Sub
     Private Sub printItem()
         If Me.cAction.ToLower = "start" Then
-            If KieuInBartender = "1" Then
-                If i_view.Rows.Count = 0 Then
-                    msg.Alert("Hãy chọn những mặt hàng cần in tem")
-                    Return
+            ' 1. Khởi tạo DataTable dtToPrint với cấu trúc giống hệt i_view
+            Dim dtToPrint As DataTable = i_view.Clone()
+            
+            ' 2. Tìm tên cột tích chọn trong i_ds hoặc i_view
+            Dim selectColName As String = ""
+            If i_ds IsNot Nothing AndAlso i_ds.Table IsNot Nothing Then
+                ' Tìm cột kiểu Boolean trong i_ds
+                For Each dc As DataColumn In i_ds.Table.Columns
+                    If dc.DataType Is GetType(Boolean) Then
+                        selectColName = dc.ColumnName
+                        Exit For
+                    End If
+                Next
+                
+                ' Fallback tìm theo tên cột đặc trưng
+                If selectColName = "" Then
+                    For Each dc As DataColumn In i_ds.Table.Columns
+                        Dim cname As String = dc.ColumnName.ToLower()
+                        If cname = "chon" OrElse cname = "in_yn" OrElse cname = "in_tem" OrElse cname = "select" OrElse cname = "selected" OrElse cname = "check" Then
+                            selectColName = dc.ColumnName
+                            Exit For
+                        End If
+                    Next
                 End If
+            End If
+
+            If selectColName = "" AndAlso i_view IsNot Nothing Then
+                For Each dc As DataColumn In i_view.Columns
+                    If dc.DataType Is GetType(Boolean) Then
+                        selectColName = dc.ColumnName
+                        Exit For
+                    End If
+                Next
+                If selectColName = "" Then
+                    For Each dc As DataColumn In i_view.Columns
+                        Dim cname As String = dc.ColumnName.ToLower()
+                        If cname = "chon" OrElse cname = "in_yn" OrElse cname = "in_tem" OrElse cname = "select" OrElse cname = "selected" OrElse cname = "check" Then
+                            selectColName = dc.ColumnName
+                            Exit For
+                        End If
+                    Next
+                End If
+            End If
+
+            ' 3. Duyệt qua DataView i_ds để lấy các dòng được tích chọn
+            If selectColName <> "" AndAlso i_ds IsNot Nothing Then
+                Try
+                    For Each drv As DataRowView In i_ds
+                        Dim val As Object = drv.Row(selectColName)
+                        Dim isChecked As Boolean = False
+                        If val IsNot Nothing AndAlso Not Information.IsDBNull(val) Then
+                            If TypeOf val Is Boolean Then
+                                isChecked = DirectCast(val, Boolean)
+                            Else
+                                Dim valStr As String = val.ToString().Trim().ToLower()
+                                isChecked = (valStr = "true" OrElse valStr = "1" OrElse valStr = "yes")
+                            End If
+                        End If
+                        
+                        If isChecked Then
+                            Dim newRow As DataRow = dtToPrint.NewRow()
+                            For Each dc As DataColumn In dtToPrint.Columns
+                                If drv.Row.Table.Columns.Contains(dc.ColumnName) Then
+                                    newRow(dc.ColumnName) = drv.Row(dc.ColumnName)
+                                End If
+                            Next
+                            dtToPrint.Rows.Add(newRow)
+                        End If
+                    Next
+                Catch
+                End Try
+            End If
+
+            ' 4. Nếu không có dòng nào được tích chọn (hoặc không tìm thấy cột tích chọn), mặc định lấy mặt hàng đang xem ở khung chi tiết
+            If dtToPrint.Rows.Count = 0 AndAlso i_view IsNot Nothing AndAlso i_view.Rows.Count > 0 Then
+                Try
+                    Dim newRow As DataRow = dtToPrint.NewRow()
+                    For Each dc As DataColumn In dtToPrint.Columns
+                        newRow(dc.ColumnName) = i_view.Rows(0)(dc.ColumnName)
+                    Next
+                    dtToPrint.Rows.Add(newRow)
+                Catch
+                End Try
+            End If
+
+            If dtToPrint.Rows.Count = 0 Then
+                msg.Alert("Hãy chọn những mặt hàng cần in tem")
+                Return
+            End If
+
+            If KieuInBartender = "1" OrElse KieuInBartender = "2" Then
                 'xuất excel và in bartender
                 Dim FilePathSave As String
                 FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.csv"
-                ExportGridToExcel2(i_view, "Xuất dmvt để in tem", FilePathSave)
+                ExportGridToExcel2(dtToPrint, "Xuất dmvt để in tem", FilePathSave)
             Else
                 'in tem bằng phần mềm cũ vẫn dùng
-                If i_view.Rows.Count = 0 Then
-                    msg.Alert("Hãy chọn những mặt hàng cần in tem")
-                    Return
-                End If
-                If dataOnePage.Tables.Count = 0 Then
-                    dataOnePage = New DataSet
-                    Dim dt As New DataTable("BARCODE")
-                    For Each dc As DataColumn In i_view.Columns
-                        dt.Columns.Add(dc.ColumnName, dc.DataType)
-                    Next
-                    dataOnePage.Tables.Add(dt)
-                End If
-                dataOnePage.Tables(0).Rows.Clear()
-                Dim dr As DataRow = dataOnePage.Tables(0).NewRow
-                For Each dc As DataColumn In dataOnePage.Tables(0).Columns
-                    dr(dc.ColumnName) = i_view.Rows(0)(dc.ColumnName)
-                Next
-                dataOnePage.Tables(0).Rows.Add(dr)
-                pd.PrinterSettings.PrinterName = NamePrint
-                pd.Print()
-                dataOnePage.Tables(0).Rows.Clear()
+                Intem(dtToPrint)
             End If
         Else
             msg.Alert("Chưa lưu không in được !")
@@ -1331,7 +1397,7 @@ Public Class ctrItem
                 End If
             Next
             If InLuonSL = "1" Then
-                If KieuInBartender = "1" Then
+                If KieuInBartender = "1" OrElse KieuInBartender = "2" Then
                     'lưu xong mã thì xuất excel và in ra bartender luôn
                     Dim FilePathSave As String
                     FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.csv"
@@ -2364,6 +2430,7 @@ tryagain:
         Catch
         End Try
         
+        Dim user0 = sqlite.GetValue(sysConn, "options", "user_id0", "name='m_company'")
         ' 1. Tạo bảng dữ liệu xuất khẩu chuẩn chỉ chứa các cột mà BarTender cần
         Dim dtExport As New DataTable("TEM")
         dtExport.Columns.Add("Code", GetType(String))
@@ -2388,6 +2455,10 @@ tryagain:
         dtExport.Columns.Add("S10", GetType(String))
         dtExport.Columns.Add("S11", GetType(String))
         dtExport.Columns.Add("dienGiaiNh", GetType(String))
+        dtExport.Columns.Add("Code_text", GetType(String))
+        dtExport.Columns.Add("QrLink", GetType(String))
+
+        Dim nhomCache As New System.Collections.Generic.Dictionary(Of String, String)()
 
         ' 2. Điền dữ liệu từ dv vào dtExport với định dạng tương ứng
         For Each dr As DataRow In dv.Rows
@@ -2434,10 +2505,29 @@ tryagain:
             If dv.Columns.Contains("dienGiaiNh") AndAlso Not Information.IsDBNull(dr("dienGiaiNh")) AndAlso dr("dienGiaiNh").ToString().Trim().Length > 0 Then
                 NhomDg = dr("dienGiaiNh").ToString().Trim()
             ElseIf dv.Columns.Contains("FK_Nhvt2ID") AndAlso Not Information.IsDBNull(dr("FK_Nhvt2ID")) Then
-                NhomDg = sql.GetValue(appConn, "dmnhvt2", "DienGiai", "Nhvt2ID ='" & dr("FK_Nhvt2ID").ToString().Trim() & "'")
+                Dim nhvt2Id As String = dr("FK_Nhvt2ID").ToString().Trim()
+                If nhomCache.ContainsKey(nhvt2Id) Then
+                    NhomDg = nhomCache(nhvt2Id)
+                Else
+                    Dim rawVal As Object = sql.GetValue(appConn, "dmnhvt2", "DienGiai", "Nhvt2ID ='" & nhvt2Id & "'")
+                    NhomDg = If(rawVal Is Nothing OrElse Information.IsDBNull(rawVal), "", rawVal.ToString().Trim())
+                    If NhomDg = "" Then
+                        Dim rawVal2 As Object = sql.GetValue(appConn, "dmnhvt2", "Nhvt2Name", "Nhvt2ID ='" & nhvt2Id & "'")
+                        NhomDg = If(rawVal2 Is Nothing OrElse Information.IsDBNull(rawVal2), "", rawVal2.ToString().Trim())
+                    End If
+                    nhomCache(nhvt2Id) = NhomDg
+                End If
             End If
             newRow("dienGiaiNh") = NhomDg
             
+            'ghép chuỗi in ra sadvn.vn/user_id0/diễn giải trong nhóm hàng của fk_nhvt2id/ma_td2 trong dmvt/tong_tlg/tlg_au/code
+            Dim qr_text As String = "sadvn.vn/"
+            Dim codeVal As String = If(dv.Columns.Contains("Code") AndAlso Not Information.IsDBNull(dr("Code")), dr("Code").ToString().Trim(), "")
+            Dim maTd2Val As String = If(dv.Columns.Contains("Ma_td2") AndAlso Not Information.IsDBNull(dr("Ma_td2")), dr("Ma_td2").ToString().Trim(), "")
+            qr_text = qr_text & user0 & "/" & NhomDg & "/" & maTd2Val & "/" & tongTlgVal.ToString() & "/" & tlgAuVal.ToString() & "/" & codeVal
+            newRow("Code_text") = codeVal
+            newRow("QrLink") = qr_text
+
             dtExport.Rows.Add(newRow)
         Next
 
@@ -2527,153 +2617,39 @@ tryagain:
     Dim btFormat As BarTender.Format
     Dim btMsgs As BarTender.Messages
     Private Sub inBartender(ByVal dv As DataTable)
-        'Sử dụng để in ra bartender 1 tem
-        'Tên mẫu btw cần lấy
-        Dim NameFileBatender As String = ""
-        NameFileBatender = cboTems.SelectedItem.ToString()
-
-        btApp = New BarTender.Application()
-        Dim filepath As String = Application.StartupPath & "\export\" & NameFileBatender & ".btw"
-        If System.IO.File.Exists(filepath) Then
-            Try
-                'btFormat = btApp.Formats.Open("D:\00ngoai\2019\pm kho_thao\3cm 1cm.btw")
-                'Vtid,Vtname,Ma_td2,Gc_td1,Gc_td2,Gc_td3,Tien_cong,Tien_da
-                'Code_qr=Code_text(chính là code hiện tại),S1,S2,S3,S10,tong_tlg,tlg_au,tlg_da,gia_ban11
-                btFormat = btApp.Formats.Open(filepath)
-                'msg.Alert(LTrim(Strings.Format(Convert.ToDecimal(dv.Rows(0)("Tien_cong")), Me.oOptions("m_ip_tien"))))
-                btFormat.SetNamedSubStringValue("Code_qr", dv.Rows(0)("Code"))
-                btFormat.SetNamedSubStringValue("Code_text", dv.Rows(0)("Code"))
-                btFormat.SetNamedSubStringValue("Vtid", dv.Rows(0)("VtID"))
-                btFormat.SetNamedSubStringValue("Vtname", dv.Rows(0)("VtName"))
-                btFormat.SetNamedSubStringValue("Ma_td2", dv.Rows(0)("Ma_td2"))
-                btFormat.SetNamedSubStringValue("gc_td1", getKLgam(dv.Rows(0)("Tong_tlg")))
-                btFormat.SetNamedSubStringValue("gc_td2", getKLgam(dv.Rows(0)("Tlg_au")))
-                btFormat.SetNamedSubStringValue("gc_td3", getKLgam(dv.Rows(0)("Tlg_da")))
-                btFormat.SetNamedSubStringValue("sl_td1", getKLgamSo(dv.Rows(0)("Tong_tlg")))
-                btFormat.SetNamedSubStringValue("sl_td2", getKLgamSo(dv.Rows(0)("Tlg_au")))
-                btFormat.SetNamedSubStringValue("sl_td3", getKLgamSo(dv.Rows(0)("Tlg_da")))
-                Dim so As Decimal
-                so = Convert.ToDecimal(dv.Rows(0)("Tlg_au").ToString.Trim)
-                btFormat.SetNamedSubStringValue("tlg_au", so)
-                so = Convert.ToDecimal(dv.Rows(0)("Tlg_da").ToString.Trim)
-                btFormat.SetNamedSubStringValue("tlg_da", so)
-                so = Convert.ToDecimal(dv.Rows(0)("Tong_tlg").ToString.Trim)
-                btFormat.SetNamedSubStringValue("Tong_tlg", so)
-                Dim tien As Decimal
-                tien = Convert.ToDecimal(dv.Rows(0)("Gia_ban11"))
-                btFormat.SetNamedSubStringValue("gia_ban11", LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien"))))
-                tien = Convert.ToDecimal(dv.Rows(0)("Tien_da"))
-                btFormat.SetNamedSubStringValue("Tien_da", LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien"))))
-                tien = Convert.ToDecimal(dv.Rows(0)("Tien_cong"))
-                btFormat.SetNamedSubStringValue("Tien_cong", LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien"))))
-                btFormat.SetNamedSubStringValue("s1", dv.Rows(0)("S1"))
-                btFormat.SetNamedSubStringValue("s2", dv.Rows(0)("S2"))
-                btFormat.SetNamedSubStringValue("s3", dv.Rows(0)("S3"))
-                btFormat.SetNamedSubStringValue("s10", dv.Rows(0)("S10"))
-                btFormat.SetNamedSubStringValue("s11", dv.Rows(0)("S11"))
-                If dv.Rows(0)("dienGiaiNh").ToString.Length > 0 Then
-                    btFormat.SetNamedSubStringValue("dienGiaiNh", dv.Rows(0)("dienGiaiNh"))
-                Else
-                    Dim NhomDg As String = sql.GetValue(appConn, "dmnhvt2", "DienGiai", "Nhvt2ID ='" & dv.Rows(0)("FK_Nhvt2ID") & "'")
-                    btFormat.SetNamedSubStringValue("dienGiaiNh", NhomDg)
-                End If
-
-                'Số bản copy của 1 con tem
-                btFormat.IdenticalCopiesOfLabel = 1
-                'số lượng tem cần in
-                btFormat.NumberSerializedLabels = 1
-                'hàm in
-                btFormat.UseDatabase = True
-                btFormat.UseInputDataFile = False
-                btFormat.Print("Job1", True, -1, btMsgs)
-                'btFormat.PrintOut(False, False)
-            Catch ex As Exception
-                msg.Alert(ex.Message)
-            Finally
-                btApp.Quit(BarTender.BtSaveOptions.btDoNotSaveChanges)
-            End Try
-        Else
-            msg.Alert("Chưa có file " & NameFileBatender & ".btw  để thực hiện in ." & vbCrLf & "Đường dẫn đến file " & filepath)
-        End If
+        Dim FilePathSave As String
+        FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.csv"
+        ExportGridToExcel2(dv, "Xuất dmvt để in tem", FilePathSave)
     End Sub
     Private Sub inBartenderSLnhieu(ByVal dv As DataTable)
-        'Sử dụng để in ra bartender 1 tem
-        'Tên mẫu btw cần lấy
-        Dim NameFileBatender As String = ""
-        NameFileBatender = cboTems.SelectedItem.ToString()
-
-        btApp = New BarTender.Application()
-        Dim filepath As String = Application.StartupPath & "\export\" & NameFileBatender & ".btw"
-        If System.IO.File.Exists(filepath) Then
-            Try
-                'btFormat = btApp.Formats.Open("D:\00ngoai\2019\pm kho_thao\3cm 1cm.btw")
-                'Vtid,Vtname,Ma_td2,Gc_td1,Gc_td2,Gc_td3,Tien_cong,Tien_da
-                'Code_qr=Code_text(chính là code hiện tại),S1,S2,S3,S10,tong_tlg,tlg_au,tlg_da,gia_ban11
-                btFormat = btApp.Formats.Open(filepath, False, "")
-                For Each drTemIn As DataRow In dv.Rows
-                    'msg.Alert(LTrim(Strings.Format(Convert.ToDecimal(dv.Rows(0)("Tien_cong")), Me.oOptions("m_ip_tien"))))
-                    btFormat.SetNamedSubStringValue("Code_qr", drTemIn("Code"))
-                    btFormat.SetNamedSubStringValue("Code_text", drTemIn("Code"))
-                    btFormat.SetNamedSubStringValue("Vtid", drTemIn("VtID"))
-                    btFormat.SetNamedSubStringValue("Vtname", drTemIn("VtName"))
-                    btFormat.SetNamedSubStringValue("Ma_td2", drTemIn("Ma_td2"))
-                    btFormat.SetNamedSubStringValue("gc_td1", getKLgam(drTemIn("Tong_tlg")))
-                    btFormat.SetNamedSubStringValue("gc_td2", getKLgam(drTemIn("Tlg_au")))
-                    btFormat.SetNamedSubStringValue("gc_td3", getKLgam(drTemIn("Tlg_da")))
-                    btFormat.SetNamedSubStringValue("sl_td1", getKLgamSo(drTemIn("Tong_tlg")))
-                    btFormat.SetNamedSubStringValue("sl_td2", getKLgamSo(drTemIn("Tlg_au")))
-                    btFormat.SetNamedSubStringValue("sl_td3", getKLgamSo(drTemIn("Tlg_da")))
-                    Dim so As Decimal
-                    so = Convert.ToDecimal(drTemIn("Tlg_au").ToString.Trim)
-                    btFormat.SetNamedSubStringValue("tlg_au", so)
-                    so = Convert.ToDecimal(drTemIn("Tlg_da").ToString.Trim)
-                    btFormat.SetNamedSubStringValue("tlg_da", so)
-                    so = Convert.ToDecimal(drTemIn("Tong_tlg").ToString.Trim)
-                    btFormat.SetNamedSubStringValue("Tong_tlg", so)
-                    Dim tien As Decimal
-                    tien = Convert.ToDecimal(drTemIn("Gia_ban11"))
-                    btFormat.SetNamedSubStringValue("gia_ban11", LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien"))))
-                    tien = Convert.ToDecimal(drTemIn("Tien_da"))
-                    btFormat.SetNamedSubStringValue("Tien_da", LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien"))))
-                    tien = Convert.ToDecimal(drTemIn("Tien_cong"))
-                    btFormat.SetNamedSubStringValue("Tien_cong", LTrim(Strings.Format(tien, Me.oOptions("m_ip_tien"))))
-                    btFormat.SetNamedSubStringValue("s1", drTemIn("S1"))
-                    btFormat.SetNamedSubStringValue("s2", drTemIn("S2"))
-                    btFormat.SetNamedSubStringValue("s3", drTemIn("S3"))
-                    btFormat.SetNamedSubStringValue("s10", drTemIn("S10"))
-                    btFormat.SetNamedSubStringValue("s11", drTemIn("S11"))
-                    If drTemIn("dienGiaiNh").ToString.Length > 0 Then
-                        btFormat.SetNamedSubStringValue("dienGiaiNh", drTemIn("dienGiaiNh"))
-                    Else
-                        Dim NhomDg As String = sql.GetValue(appConn, "dmnhvt2", "DienGiai", "Nhvt2ID ='" & drTemIn("FK_Nhvt2ID") & "'")
-                        btFormat.SetNamedSubStringValue("dienGiaiNh", NhomDg)
-                    End If
-
-                    'Số bản copy của 1 con tem
-                    btFormat.IdenticalCopiesOfLabel = 1
-                    'số lượng tem cần in
-                    btFormat.NumberSerializedLabels = 1
-                    'hàm in
-                    btFormat.UseDatabase = True
-                    btFormat.UseInputDataFile = False
-                    btFormat.Print("Job1", True, -1, btMsgs)
-                    'btFormat.PrintOut(False, False)
-                Next
-            Catch ex As Exception
-                msg.Alert(ex.Message)
-            Finally
-                btApp.Quit(BarTender.BtSaveOptions.btDoNotSaveChanges)
-            End Try
-        Else
-            msg.Alert("Chưa có file " & NameFileBatender & ".btw  để thực hiện in ." & vbCrLf & "Đường dẫn đến file " & filepath)
-        End If
+        Dim FilePathSave As String
+        FilePathSave = StringType.FromObject(oVar.Item("reportDir")).Replace("report\", "export\") & "export2exceldmvt.csv"
+        ExportGridToExcel2(dv, "Xuất dmvt để in tem", FilePathSave)
     End Sub
     Private Sub inBartenderExcel()
         'Tên mẫu btw cần lấy
         Dim NameFileBatender As String = ""
         NameFileBatender = cboTems.SelectedItem.ToString()
 
-        btApp = New BarTender.Application()
+        Dim isAlive As Boolean = False
+        If btApp IsNot Nothing Then
+            Try
+                Dim v As String = btApp.Version
+                isAlive = True
+            Catch
+                isAlive = False
+            End Try
+        End If
+
+        If Not isAlive Then
+            Try
+                btApp = New BarTender.Application()
+            Catch ex As Exception
+                msg.Alert("Không thể khởi động BarTender: " & ex.Message)
+                Return
+            End Try
+        End If
+
         Dim filepath As String = Application.StartupPath & "\export\" & NameFileBatender & ".btw"
         If System.IO.File.Exists(filepath) Then
             Try
@@ -2690,7 +2666,14 @@ tryagain:
             Catch ex As Exception
                 msg.Alert(ex.Message)
             Finally
-                btApp.Quit(BarTender.BtSaveOptions.btDoNotSaveChanges)
+                If btFormat IsNot Nothing Then
+                    Try
+                        btFormat.Close(BarTender.BtSaveOptions.btDoNotSaveChanges)
+                    Catch
+                    End Try
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(btFormat)
+                    btFormat = Nothing
+                End If
             End Try
         Else
             msg.Alert("Chưa có file " & NameFileBatender & ".btw  để thực hiện in ." & vbCrLf & "Đường dẫn đến file " & filepath)
@@ -3089,4 +3072,15 @@ tryagain:
 
         Return TienBanVND
     End Function
+
+    Private Sub ctrItem_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.Disposed
+        If btApp IsNot Nothing Then
+            Try
+                btApp.Quit(BarTender.BtSaveOptions.btDoNotSaveChanges)
+            Catch
+            End Try
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(btApp)
+            btApp = Nothing
+        End If
+    End Sub
 End Class
